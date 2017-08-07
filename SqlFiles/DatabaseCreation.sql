@@ -36,6 +36,42 @@ BEGIN
 END
 GO
 ------------
+IF object_id('UserStories', 'U') IS NOT NULL
+BEGIN
+	ALTER TABLE
+		UserStories
+	DROP CONSTRAINT IF EXISTS
+		PK_user_stories,
+		DEF_user_stories_created_date_time,
+		DEF_user_stories_is_active,
+		CHK_user_stories_not_null_project_id,
+		CHK_user_stories_not_null_created_by_user_id,
+		CHK_user_stories_not_null_epic_id,
+		CHK_user_stories_not_null_created_date_time,
+		CHK_user_stories_not_null_description,
+		CHK_user_stories_not_null_is_active,
+		FK_user_stories_project_id_projects_id,
+		FK_user_stories_created_by_user_id_users_id,
+		FK_user_stories_epic_id_epics_id
+END
+------------
+IF OBJECT_ID('Epics', 'U') IS NOT NULL
+BEGIN
+	ALTER TABLE
+		Epics
+	DROP CONSTRAINT IF EXISTS
+		PK_epics,
+		CHK_epics_not_null_project_id,
+		CHK_epics_not_null_created_by_user_id,
+		CHK_epics_not_null_description,
+		CHK_epics_not_null_is_active,
+		DEF_epics_created_date_time,
+		DEF_epics_is_active,
+		FK_epics_project_id_projects_id,
+		FK_epics_created_by_user_id
+END
+GO
+------------
 IF OBJECT_ID('Users', 'U') IS NOT NULL
 BEGIN
 	ALTER TABLE
@@ -62,7 +98,9 @@ BEGIN
 		CHK_projects_not_null_created_time,
 		CHK_projects_not_null_is_active,
 		CHK_projects_not_null_product_owner_user_id,
-		CHK_projects_not_null_scrum_master_user_id
+		CHK_projects_not_null_scrum_master_user_id,
+		DEF_projects_created_date_time,
+		DEF_projects_is_active
 END
 GO
 ------------
@@ -76,6 +114,12 @@ DROP TABLE IF EXISTS Projects
 GO
 ------------
 DROP TABLE IF EXISTS TeamMembers
+GO
+------------
+DROP TABLE IF EXISTS Epics
+GO
+------------
+DROP TABLE IF EXISTS UserStories
 GO
 ------------
 ------------------------------
@@ -107,16 +151,18 @@ CREATE TABLE Projects(
 	Id INT IDENTITY(1,1),
 	Name VARCHAR(100),
 	Description VARCHAR(500),
-	CreatedDate DATETIME,
+	CreatedDateTime DATETIME
+		CONSTRAINT DEF_projects_created_date_time DEFAULT FORMAT(GETUTCDATE(), 'yyyy-MM-dd HH:mm:ss'),
 	CompletedDate DATETIME,
-	IsActive BIT,
+	IsActive BIT
+		CONSTRAINT DEF_projects_is_active DEFAULT 1,
 	ProductOwnerUserId INT,
 	ScrumMasterUserId INT
 
 	CONSTRAINT PK_projects PRIMARY KEY(Id),
 
 	CONSTRAINT CHK_projects_not_null_name CHECK(Name IS NOT NULL),
-	CONSTRAINT CHK_projects_not_null_created_time CHECK(CreatedDate IS NOT NULL),
+	CONSTRAINT CHK_projects_not_null_created_time CHECK(CreatedDateTime IS NOT NULL),
 	CONSTRAINT CHK_projects_not_null_is_active CHECK(IsActive IS NOT NULL),
 	CONSTRAINT CHK_projects_not_null_product_owner_user_id CHECK(ProductOwnerUserId IS NOT NULL),
 	CONSTRAINT CHK_projects_not_null_scrum_master_user_id CHECK(ScrumMasterUserId IS NOT NULL)
@@ -133,5 +179,51 @@ CREATE TABLE TeamMembers(
 
 	CONSTRAINT FK_team_members_user_id_users_id FOREIGN KEY(UserId) REFERENCES Users(Id),
 	CONSTRAINT FK_team_members_project_id_projects_id FOREIGN KEY (ProjectId) REFERENCES Projects(Id)
+)
+------------
+CREATE TABLE Epics(
+	Id INT IDENTITY(1,1),
+	ProjectId INT,
+	CreatedByUserId INT,
+	CreatedDateTime DATETIME 
+		CONSTRAINT DEF_epics_created_date_time DEFAULT FORMAT(GETUTCDATE(), 'yyyy-MM-dd HH:mm:ss'),
+	Description VARCHAR(300),
+	IsActive BIT
+		CONSTRAINT DEF_epics_is_active DEFAULT 1
+
+	CONSTRAINT PK_epics PRIMARY KEY(Id),
+
+	CONSTRAINT CHK_epics_not_null_project_id CHECK(ProjectId IS NOT NULL),
+	CONSTRAINT CHK_epics_not_null_created_by_user_id CHECK(CreatedByUserId IS NOT NULL),
+	CONSTRAINT CHK_epics_not_null_description CHECK(Description IS NOT NULL),
+	CONSTRAINT CHK_epics_not_null_is_active CHECK(IsActive IS NOT NULL),
+
+	CONSTRAINT FK_epics_project_id_projects_id FOREIGN KEY(ProjectId) REFERENCES Projects(Id),
+	CONSTRAINT FK_epics_created_by_user_id FOREIGN KEY(CreatedByUserId) REFERENCES Users(Id)
+)
+------------
+CREATE TABLE UserStories(
+	Id INT IDENTITY(1,1),
+	ProjectId INT,
+	CreatedByUserId INT,
+	EpicId INT,
+	CreatedDateTime DATETIME
+		CONSTRAINT DEF_user_stories_created_date_time DEFAULT FORMAT(GETUTCDATE(), 'yyyy-MM-dd HH:mm:ss'),
+	Description VARCHAR(300),
+	IsActive BIT
+		CONSTRAINT DEF_user_stories_is_active DEFAULT 1
+
+	CONSTRAINT PK_user_stories PRIMARY KEY(Id),
+
+	CONSTRAINT CHK_user_stories_not_null_project_id CHECK(ProjectId IS NOT NULL),
+	CONSTRAINT CHK_user_stories_not_null_created_by_user_id CHECK(CreatedByUserId IS NOT NULL),
+	CONSTRAINT CHK_user_stories_not_null_epic_id CHECK(EpicId IS NOT NULL),
+	CONSTRAINT CHK_user_stories_not_null_created_date_time CHECK(CreatedDateTime IS NOT NULL),
+	CONSTRAINT CHK_user_stories_not_null_description CHECK(Description IS NOT NULL),
+	CONSTRAINT CHK_user_stories_not_null_is_active CHECK(IsActive IS NOT NULL),
+
+	CONSTRAINT FK_user_stories_project_id_projects_id FOREIGN KEY(ProjectId) REFERENCES Projects(Id),
+	CONSTRAINT FK_user_stories_created_by_user_id_users_id FOREIGN KEY(CreatedByUserId) REFERENCES Users(Id),
+	CONSTRAINT FK_user_stories_epic_id_epics_id FOREIGN KEY(EpicId) REFERENCES Epics(Id)
 )
 ------------
