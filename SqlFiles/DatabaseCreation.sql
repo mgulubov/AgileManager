@@ -23,18 +23,16 @@ GO
 USE AgileManager
 GO
 ------------
-IF OBJECT_ID('UsersProjectsProjectRoles', 'U') IS NOT NULL
+IF OBJECT_ID('TeamMembers', 'U') IS NOT NULL
 BEGIN
-	ALTER TABLE 
-		UsersProjectsProjectRoles
+	ALTER TABLE
+		TeamMembers
 	DROP CONSTRAINT IF EXISTS
-		PK_users_projects_project_roles,
-		CHK_users_projects_project_roles_not_null_user_Id,
-		CHK_users_projects_project_roles_not_null_project_id,
-		CHK_users_projects_project_roles_not_null_project_role_id,
-		FK_users_projects_project_roles_user_id_users_id,
-		FK_users_projects_project_roles_project_id,
-		FK_users_projects_project_roles_project_role_id_project_roles_id
+		PK_team_members,
+		CHK_team_members_not_null_user_id,
+		CHK_team_members_not_null_project_id,
+		FK_team_members_user_id_users_id,
+		FK_team_members_project_id_projects_id
 END
 GO
 ------------
@@ -62,18 +60,9 @@ BEGIN
 		PK_projects,
 		CHK_projects_not_null_name,
 		CHK_projects_not_null_created_time,
-		CHK_projects_not_null_is_active
-END
-GO
-------------
-IF OBJECT_ID('ProjectRoles', 'U') IS NOT NULL
-BEGIN
-	ALTER TABLE
-		ProjectRoles
-	DROP CONSTRAINT IF EXISTS
-		PK_project_roles,
-		CHK_project_roles_not_null_name,
-		UNQ_project_roles_name
+		CHK_projects_not_null_is_active,
+		CHK_projects_not_null_product_owner_user_id,
+		CHK_projects_not_null_scrum_master_user_id
 END
 GO
 ------------
@@ -86,10 +75,7 @@ GO
 DROP TABLE IF EXISTS Projects
 GO
 ------------
-DROP TABLE IF EXISTS ProjectRoles
-GO
-------------
-DROP TABLE IF EXISTS UsersProjectsProjectRoles
+DROP TABLE IF EXISTS TeamMembers
 GO
 ------------
 ------------------------------
@@ -106,11 +92,13 @@ CREATE TABLE Users(
 	Phone VARCHAR(100)
 
 	CONSTRAINT PK_users PRIMARY KEY(Id),
+
 	CONSTRAINT CHK_users_not_null_username CHECK(Username IS NOT NULL),
 	CONSTRAINT CHK_users_not_null_password CHECK(Password IS NOT NULL),
 	CONSTRAINT CHK_users_not_null_firstname CHECK(FirstName IS NOT NULL),
 	CONSTRAINT CHK_users_not_null_lastname CHECK(LastName IS NOT NULL),
 	CONSTRAINT CHK_users_not_null_email CHECK(Email IS NOT NULL),
+
 	CONSTRAINT UNQ_users_username UNIQUE(Username),
 	CONSTRAINT UNQ_users_email UNIQUE(Email) 
 )
@@ -121,34 +109,29 @@ CREATE TABLE Projects(
 	Description VARCHAR(500),
 	CreatedDate DATETIME,
 	CompletedDate DATETIME,
-	IsActive BIT
+	IsActive BIT,
+	ProductOwnerUserId INT,
+	ScrumMasterUserId INT
 
 	CONSTRAINT PK_projects PRIMARY KEY(Id),
+
 	CONSTRAINT CHK_projects_not_null_name CHECK(Name IS NOT NULL),
 	CONSTRAINT CHK_projects_not_null_created_time CHECK(CreatedDate IS NOT NULL),
-	CONSTRAINT CHK_projects_not_null_is_active CHECK(IsActive IS NOT NULL)
+	CONSTRAINT CHK_projects_not_null_is_active CHECK(IsActive IS NOT NULL),
+	CONSTRAINT CHK_projects_not_null_product_owner_user_id CHECK(ProductOwnerUserId IS NOT NULL),
+	CONSTRAINT CHK_projects_not_null_scrum_master_user_id CHECK(ScrumMasterUserId IS NOT NULL)
 )
 ------------
-CREATE TABLE ProjectRoles(
-	Id INT IDENTITY(1,1),
-	Name VARCHAR(100)
-
-	CONSTRAINT PK_project_roles PRIMARY KEY(Id),
-	CONSTRAINT CHK_project_roles_not_null_name CHECK(Name IS NOT NULL),
-	CONSTRAINT UNQ_project_roles_name UNIQUE(Name)
-)
-------------
-CREATE TABLE UsersProjectsProjectRoles(
+CREATE TABLE TeamMembers(
 	UserId INT,
-	ProjectId INT,
-	ProjectRoleId INT
+	ProjectId INT
 
-	CONSTRAINT PK_users_projects_project_roles PRIMARY KEY(UserId, ProjectId, ProjectRoleId),
-	CONSTRAINT CHK_users_projects_project_roles_not_null_user_Id CHECK(UserId IS NOT NULL),
-	CONSTRAINT CHK_users_projects_project_roles_not_null_project_id CHECK(ProjectId IS NOT NULL),
-	CONSTRAINT CHK_users_projects_project_roles_not_null_project_role_id CHECK(ProjectRoleId IS NOT NULL),
-	CONSTRAINT FK_users_projects_project_roles_user_id_users_id FOREIGN KEY(UserId) REFERENCES Users(Id),
-	CONSTRAINT FK_users_projects_project_roles_project_id FOREIGN KEY(ProjectId) REFERENCES Projects(Id),
-	CONSTRAINT FK_users_projects_project_roles_project_role_id_project_roles_id FOREIGN KEY(ProjectRoleId) REFERENCES ProjectRoles(Id)
+	CONSTRAINT PK_team_members PRIMARY KEY(UserId, ProjectId),
+
+	CONSTRAINT CHK_team_members_not_null_user_id CHECK(UserId IS NOT NULL),
+	CONSTRAINT CHK_team_members_not_null_project_id CHECK(ProjectId IS NOT NULL),
+
+	CONSTRAINT FK_team_members_user_id_users_id FOREIGN KEY(UserId) REFERENCES Users(Id),
+	CONSTRAINT FK_team_members_project_id_projects_id FOREIGN KEY (ProjectId) REFERENCES Projects(Id)
 )
 ------------
