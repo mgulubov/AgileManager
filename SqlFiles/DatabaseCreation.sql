@@ -23,6 +23,41 @@ GO
 USE AgileManager
 GO
 ------------
+IF OBJECT_ID('SprintsProductBacklogEntries', 'U') IS NOT NULL
+BEGIN
+	ALTER TABLE
+		SprintsProductBacklogEntries
+	DROP CONSTRAINT IF EXISTS
+		PK_sprints_product_backlog_entries,
+		CHK_sprints_product_backlog_entries_not_null_sprint_id,
+		CHK_sprints_product_backlog_entries_not_null_product_backlog_item_id,
+		FK_sprints_product_backlog_entries_sprint_id_sprints_id,
+		FK_sprints_product_backlog_entries_product_backlog_item_id_product_backlog_entries_id
+END
+GO
+------------
+IF OBJECT_ID('Sprints', 'U') IS NOT NULL
+BEGIN
+	ALTER TABLE
+		Sprints
+	DROP CONSTRAINT IF EXISTS
+		DEF_sprints_is_active,
+		DEF_sprints_created_datetime,
+		DEF_sprints_last_modified_datetime,
+		PK_sprints,
+		CHK_sprints_not_null_project_id,
+		CHK_sprints_not_null_created_by_user_id,
+		CHK_sprints_not_null_last_modified_by_user_id,
+		CHK_sprints_not_null_is_active,
+		CHK_sprints_not_null_created_datetime,
+		CHK_sprints_not_null_last_modified_datetime,
+		CHK_sprints_not_null_end_datetime,
+		FK_sprints_project_id_projects_id,
+		FK_sprints_created_by_user_id_users_id,
+		FK_sprints_last_modified_by_user_id
+END
+GO
+------------
 IF OBJECT_ID('ProductBacklogEntries', 'U') IS NOT NULL
 BEGIN
 	ALTER TABLE
@@ -199,6 +234,12 @@ DROP TABLE IF EXISTS ProductBacklogEntries
 GO
 ------------
 DROP TABLE IF EXISTS ProductBacklogEntryStatuses
+GO
+------------
+DROP TABLE IF EXISTS Sprints
+GO
+------------
+DROP TABLE IF EXISTS SprintsProductBacklogEntries
 GO
 ------------
 ------------------------------
@@ -523,5 +564,79 @@ CREATE TABLE ProductBacklogEntries(
 	CONSTRAINT FK_product_backlog_entries_assigned_to_user_id_users_id
 		FOREIGN KEY(AssignedToUserId)
 		REFERENCES Users(Id)
+)
+------------
+CREATE TABLE Sprints(
+	Id INT IDENTITY(1,1),
+	ProjectId INT,
+	CreatedByUserId INT,
+	LastModifiedByUserId INT,
+	IsActive BIT 
+		CONSTRAINT DEF_sprints_is_active DEFAULT 1,
+	CreatedDatetime DATETIME
+		CONSTRAINT DEF_sprints_created_datetime DEFAULT(
+			FORMAT(GETUTCDATE(), 'yyyy-MM-dd HH:mm:ss')
+		),
+	LastModifiedDatetime DATETIME
+		CONSTRAINT DEF_sprints_last_modified_datetime DEFAULT(
+			FORMAT(GETUTCDATE(), 'yyyy-MM-dd HH:mm:ss')
+		),
+	EndDatetime DATETIME,
+	Comments VARCHAR(MAX)
+
+	CONSTRAINT PK_sprints PRIMARY KEY(Id),
+
+	CONSTRAINT CHK_sprints_not_null_project_id CHECK(
+		ProjectId IS NOT NULL
+	),
+	CONSTRAINT CHK_sprints_not_null_created_by_user_id CHECK(
+		CreatedByUserId IS NOT NULL
+	),
+	CONSTRAINT CHK_sprints_not_null_last_modified_by_user_id CHECK(
+		LastModifiedByUserId IS NOT NULL
+	),
+	CONSTRAINT CHK_sprints_not_null_is_active CHECK(
+		IsActive IS NOT NULL
+	),
+	CONSTRAINT CHK_sprints_not_null_created_datetime CHECK(
+		CreatedDatetime IS NOT NULL
+	),
+	CONSTRAINT CHK_sprints_not_null_last_modified_datetime CHECK(
+		LastModifiedDatetime IS NOT NULL
+	),
+	CONSTRAINT CHK_sprints_not_null_end_datetime CHECK(
+		EndDatetime IS NOT NULL
+	),
+
+	CONSTRAINT FK_sprints_project_id_projects_id
+		FOREIGN KEY(ProjectId)
+		REFERENCES Projects(Id),
+	CONSTRAINT FK_sprints_created_by_user_id_users_id
+		FOREIGN KEY(CreatedByUserId)
+		REFERENCES Users(Id),
+	CONSTRAINT FK_sprints_last_modified_by_user_id
+		FOREIGN KEY(LastModifiedByUserId)
+		REFERENCES Users(Id)
+)
+------------
+CREATE TABLE SprintsProductBacklogEntries(
+	SprintId INT,
+	ProductBacklogEntryId INT,
+
+	CONSTRAINT PK_sprints_product_backlog_entries PRIMARY KEY(SprintId, ProductBacklogEntryId),
+
+	CONSTRAINT CHK_sprints_product_backlog_entries_not_null_sprint_id CHECK(
+		SprintId IS NOT NULL
+	),
+	CONSTRAINT CHK_sprints_product_backlog_entries_not_null_product_backlog_item_id CHECK(
+		ProductBacklogEntryId IS NOT NULL
+	),
+
+	CONSTRAINT FK_sprints_product_backlog_entries_sprint_id_sprints_id
+		FOREIGN KEY(SprintId)
+		REFERENCES Sprints(Id),
+	CONSTRAINT FK_sprints_product_backlog_entries_product_backlog_item_id_product_backlog_entries_id
+		FOREIGN KEY(ProductBacklogEntryId)
+		REFERENCES ProductBacklogEntries(Id)
 )
 ------------
