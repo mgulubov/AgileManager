@@ -23,24 +23,84 @@ GO
 USE AgileManager
 GO
 ------------
-IF OBJECT_ID('ProductBacklog', 'U') IS NOT NULL
+IF OBJECT_ID('ProductBacklogEntries', 'U') IS NOT NULL
 BEGIN
 	ALTER TABLE
-		ProductBacklog
+		ProductBacklogEntries
 	DROP CONSTRAINT IF EXISTS
-		PK_product_backlog,
-		DEF_product_backlog_created_datetime,
-		DEF_product_backlog_last_modified_datetime,
-		DEF_product_backlog_is_active,
-		CHK_product_backlog_not_null_project_id,
-		CHK_product_backlog_not_null_created_by_user_id,
-		CHK_product_backlog_not_null_last_modified_by_user_id,
-		CHK_product_backlog_not_null_created_datetime,
-		CHK_product_backlog_not_null_last_modified_datetime,
-		CHK_product_backlog_not_null_is_active,
-		FK_product_backlog_project_id_projects_id,
-		FK_product_backlog_created_by_user_id_users_id,
-		FK_product_backlog_last_modified_by_user_id
+		DEF_product_backlog_entries_product_backlog_entry_status_id,
+		DEF_product_backlog_entries_created_datetime,
+		DEF_product_backlog_entries_last_modified_datetime,
+		DEF_product_backlog_entries_is_active,
+		PK_product_backlog_entries,
+		CHK_product_backlog_entries_not_null_user_story_id,
+		CHK_product_backlog_entries_not_null_created_by_user_id,
+		CHK_product_backlog_entries_not_null_last_modified_by_user_id,
+		CHK_product_backlog_entries_not_null_product_backlog_entry_status_id,
+		CHK_product_backlog_entries_not_null_created_datetime,
+		CHK_product_backlog_entries_not_null_last_modified_datetime,
+		CHK_product_backlog_entries_not_null_user_is_active,
+		CHK_product_backlog_entries_not_null_user_stitle,
+		CHK_product_backlog_entries_not_null_user_description,
+		FK_product_backlog_entries_product_backlog_entry_status_id_product_backlog_entry_statuses_id,
+		FK_product_backlog_entries_user_story_id_user_stories_id,
+		FK_product_backlog_entries_created_by_user_id_users_id,
+		FK_product_backlog_entries_last_modified_by_user_id_users_id,
+		FK_product_backlog_entries_assigned_to_user_id_users_id
+END
+GO
+------------
+IF OBJECT_ID('ProductBacklogEntryStatuses', 'U') IS NOT NULL
+BEGIN
+	ALTER TABLE
+		ProductBacklogEntryStatuses
+	DROP CONSTRAINT IF EXISTS
+		PK_product_backlog_entry_statuses,
+		CHK_product_backlog_entry_statuses_not_null_name
+END
+GO
+------------
+IF OBJECT_ID('UserStories', 'U') IS NOT NULL
+BEGIN
+	ALTER TABLE
+		UserStories
+	DROP CONSTRAINT IF EXISTS
+		DEF_user_stories_created_datetime,
+		DEF_user_stories_last_modified_datetime,
+		DEF_user_stories_is_active,
+		PK_user_stories,
+		CHK_user_stories_not_null_epic_id,
+		CHK_user_stories_not_null_created_by_user_id,
+		CHK_user_stories_not_null_last_modified_by_user_id,
+		CHK_user_stories_not_null_created_datetime,
+		CHK_user_stories_not_null_last_modified_datetime,
+		CHK_user_stories_not_null_is_active,
+		CHK_user_stories_not_null_title,
+		CHK_user_stories_not_null_description,
+		FK_user_stories_epic_id_epics_id,
+		FK_user_stories_created_by_user_id_users_id,
+		FK_user_stories_lasty_modified_by_user_id_users_id
+END
+GO
+------------
+IF OBJECT_ID('ProductBacklogs', 'U') IS NOT NULL
+BEGIN
+	ALTER TABLE
+		ProductBacklogs
+	DROP CONSTRAINT IF EXISTS
+		PK_product_backlogs,
+		DEF_product_backlogs_created_datetime,
+		DEF_product_backlogs_last_modified_datetime,
+		DEF_product_backlogs_is_active,
+		CHK_product_backlogs_not_null_project_id,
+		CHK_product_backlogs_not_null_created_by_user_id,
+		CHK_product_backlogs_not_null_last_modified_by_user_id,
+		CHK_product_backlogs_not_null_created_datetime,
+		CHK_product_backlogs_not_null_last_modified_datetime,
+		CHK_product_backlogs_not_null_is_active,
+		FK_product_backlogs_project_id_projects_id,
+		FK_product_backlogs_created_by_user_id_users_id,
+		FK_product_backlogs_last_modified_by_user_id
 END
 GO
 ------------
@@ -126,10 +186,19 @@ GO
 DROP TABLE IF EXISTS TeamMembers
 GO
 ------------
-DROP TABLE IF EXISTS ProductBacklog
+DROP TABLE IF EXISTS ProductBacklogs
 GO
 ------------
 DROP TABLE IF EXISTS Epics
+GO
+------------
+DROP TABLE IF EXISTS UserStories
+GO
+------------
+DROP TABLE IF EXISTS ProductBacklogEntries
+GO
+------------
+DROP TABLE IF EXISTS ProductBacklogEntryStatuses
 GO
 ------------
 ------------------------------
@@ -143,7 +212,7 @@ CREATE TABLE Users(
 	LastName VARCHAR(100),
 	Email VARCHAR(100),
 	Address VARCHAR(300),
-	Phone VARCHAR(100)
+	Phone VARCHAR(100),
 
 	CONSTRAINT PK_users PRIMARY KEY(Id),
 
@@ -175,7 +244,7 @@ CREATE TABLE Projects(
 	IsActive BIT
 		CONSTRAINT DEF_projects_is_active DEFAULT(1),
 	ProductOwnerUserId INT,
-	ScrumMasterUserId INT
+	ScrumMasterUserId INT,
 
 	CONSTRAINT PK_projects PRIMARY KEY(Id),
 
@@ -200,7 +269,7 @@ CREATE TABLE Projects(
 ------------
 CREATE TABLE TeamMembers(
 	UserId INT,
-	ProjectId INT
+	ProjectId INT,
 
 	CONSTRAINT PK_team_members PRIMARY KEY(UserId, ProjectId),
 
@@ -217,50 +286,50 @@ CREATE TABLE TeamMembers(
 		REFERENCES Projects(Id)
 )
 ------------
-CREATE TABLE ProductBacklog(
+CREATE TABLE ProductBacklogs(
 	Id INT IDENTITY(1,1),
 	ProjectId INT,
 	CreatedByUserId INT,
 	LastModifiedByUserId INT,
 	CreatedDateTime DATETIME
-		CONSTRAINT DEF_product_backlog_created_datetime DEFAULT(
+		CONSTRAINT DEF_product_backlogs_created_datetime DEFAULT(
 			FORMAT(GETUTCDATE(), 'yyyy-MM-dd HH:mm:ss')
 		),
 	LastModifiedDatetime DATETIME
-		CONSTRAINT DEF_product_backlog_last_modified_datetime DEFAULT(
+		CONSTRAINT DEF_product_backlogs_last_modified_datetime DEFAULT(
 			FORMAT(GETUTCDATE(), 'yyyy-MM-dd HH:mm:ss')
 		),
 	IsActive BIT
-		CONSTRAINT DEF_product_backlog_is_active DEFAULT(1),
+		CONSTRAINT DEF_product_backlogs_is_active DEFAULT(1),
 
-	CONSTRAINT PK_product_backlog PRIMARY KEY(Id),
+	CONSTRAINT PK_product_backlogs PRIMARY KEY(Id),
 
-	CONSTRAINT CHK_product_backlog_not_null_project_id CHECK(
+	CONSTRAINT CHK_product_backlogs_not_null_project_id CHECK(
 		ProjectId IS NOT NULL
 	),
-	CONSTRAINT CHK_product_backlog_not_null_created_by_user_id CHECK(
+	CONSTRAINT CHK_product_backlogs_not_null_created_by_user_id CHECK(
 		CreatedByUserId IS NOT NULL
 	),
-	CONSTRAINT CHK_product_backlog_not_null_last_modified_by_user_id CHECK(
+	CONSTRAINT CHK_product_backlogs_not_null_last_modified_by_user_id CHECK(
 		LastModifiedByUserId IS NOT NULL
 	),
-	CONSTRAINT CHK_product_backlog_not_null_created_datetime CHECK(
+	CONSTRAINT CHK_product_backlogs_not_null_created_datetime CHECK(
 		CreatedDatetime IS NOT NULL
 	),
-	CONSTRAINT CHK_product_backlog_not_null_last_modified_datetime CHECK(
+	CONSTRAINT CHK_product_backlogs_not_null_last_modified_datetime CHECK(
 		LastModifiedDatetime IS NOT NULL
 	),
-	CONSTRAINT CHK_product_backlog_not_null_is_active CHECK(
+	CONSTRAINT CHK_product_backlogs_not_null_is_active CHECK(
 		IsActive IS NOT NULL
 	),
 
-	CONSTRAINT FK_product_backlog_project_id_projects_id
+	CONSTRAINT FK_product_backlogs_project_id_projects_id
 		FOREIGN KEY(ProjectId)
 		REFERENCES Projects(Id),
-	CONSTRAINT FK_product_backlog_created_by_user_id_users_id
+	CONSTRAINT FK_product_backlogs_created_by_user_id_users_id
 		FOREIGN KEY(CreatedByUserId)
 		REFERENCES Users(Id),
-	CONSTRAINT FK_product_backlog_last_modified_by_user_id
+	CONSTRAINT FK_product_backlogs_last_modified_by_user_id
 		FOREIGN KEY(LastModifiedByUserId)
 		REFERENCES Users(Id)
 )
@@ -318,6 +387,141 @@ CREATE TABLE Epics(
 		REFERENCES Users(Id),
 	CONSTRAINT FK_epics_last_modified_by_user_id_users_id
 		FOREIGN KEY(LastModifiedByUserId)
+		REFERENCES Users(Id)
+)
+------------
+CREATE TABLE UserStories(
+	Id INT IDENTITY(1,1),
+	EpicId INT,
+	CreatedByUserId INT,
+	LastModifiedByUserId INT,
+	CreatedDatetime DATETIME
+		CONSTRAINT DEF_user_stories_created_datetime DEFAULT(
+			FORMAT(GETUTCDATE(), 'yyyy-MM-dd HH:mm:ss')
+		),
+	LastModifiedDatetime DATETIME
+		CONSTRAINT DEF_user_stories_last_modified_datetime DEFAULT(
+			FORMAT(GETUTCDATE(), 'yyyy-MM-dd HH:mm:ss')
+		),
+	IsActive BIT
+		CONSTRAINT DEF_user_stories_is_active DEFAULT 1,
+	Title VARCHAR(150),
+	Description VARCHAR(500),
+
+	CONSTRAINT PK_user_stories PRIMARY KEY(Id),
+
+	CONSTRAINT CHK_user_stories_not_null_epic_id CHECK(
+		EpicId IS NOT NULL
+	),
+	CONSTRAINT CHK_user_stories_not_null_created_by_user_id CHECK(
+		CreatedByUserId IS NOT NULL
+	),
+	CONSTRAINT CHK_user_stories_not_null_last_modified_by_user_id CHECK(
+		LastModifiedByUserId IS NOT NULL
+	),
+	CONSTRAINT CHK_user_stories_not_null_created_datetime CHECK(
+		CreatedDatetime IS NOT NULL
+	),
+	CONSTRAINT CHK_user_stories_not_null_last_modified_datetime CHECK(
+		LastModifiedDatetime IS NOT NULL
+	),
+	CONSTRAINT CHK_user_stories_not_null_is_active CHECK(
+		IsActive IS NOT NULL
+	),
+	CONSTRAINT CHK_user_stories_not_null_title CHECK(
+		Title IS NOT NULL
+	),
+	CONSTRAINT CHK_user_stories_not_null_description CHECK(
+		Description IS NOT NULL
+	),
+
+	CONSTRAINT FK_user_stories_epic_id_epics_id
+		FOREIGN KEY(EpicId)
+		REFERENCES Epics(Id),
+	CONSTRAINT FK_user_stories_created_by_user_id_users_id
+		FOREIGN KEY(CreatedByUserId)
+		REFERENCES Users(Id),
+	CONSTRAINT FK_user_stories_lasty_modified_by_user_id_users_id
+		FOREIGN KEY(LastModifiedByUserId)
+		REFERENCES Users(Id)
+)
+------------
+CREATE TABLE ProductBacklogEntryStatuses(
+	Id INT IDENTITY(1,1),
+	Name VARCHAR(30),
+
+	CONSTRAINT PK_product_backlog_entry_statuses PRIMARY KEY(Id),
+	CONSTRAINT CHK_product_backlog_entry_statuses_not_null_name CHECK(
+		Name IS NOT NULL
+	)
+)
+------------
+CREATE TABLE ProductBacklogEntries(
+	Id INT IDENTITY(1,1),
+	UserStoryId INT,
+	CreatedByUserId INT,
+	LastModifiedByUserId INT,
+	AssignedToUserId INT,
+	StoryPoints INT,
+	ProductBacklogEntryStatusId INT
+		CONSTRAINT DEF_product_backlog_entries_product_backlog_entry_status_id DEFAULT 1,
+	CreatedDatetime DATETIME
+		CONSTRAINT DEF_product_backlog_entries_created_datetime DEFAULT(
+			FORMAT(GETUTCDATE(), 'yyyy-MM-dd HH:mm:ss')
+		),
+	LastModifiedDatetime DATETIME
+		CONSTRAINT DEF_product_backlog_entries_last_modified_datetime DEFAULT(
+			FORMAT(GETUTCDATE(), 'yyyy-MM-dd HH:mm:ss')
+		),
+	IsActive BIT
+		CONSTRAINT DEF_product_backlog_entries_is_active DEFAULT 1,
+	Title VARCHAR(150),
+	Description VARCHAR(500),
+
+	CONSTRAINT PK_product_backlog_entries PRIMARY KEY(Id),
+
+	CONSTRAINT CHK_product_backlog_entries_not_null_user_story_id CHECK(
+		UserStoryId IS NOT NULL
+	),
+	CONSTRAINT CHK_product_backlog_entries_not_null_created_by_user_id CHECK(
+		CreatedByUserId IS NOT NULL
+	),
+	CONSTRAINT CHK_product_backlog_entries_not_null_last_modified_by_user_id CHECK(
+		LastModifiedByUserId IS NOT NULL
+	),
+	CONSTRAINT CHK_product_backlog_entries_not_null_product_backlog_entry_status_id CHECK(
+		ProductBacklogEntryStatusId IS NOT NULL
+	),
+	CONSTRAINT CHK_product_backlog_entries_not_null_created_datetime CHECK(
+		CreatedDatetime IS NOT NULL
+	),
+	CONSTRAINT CHK_product_backlog_entries_not_null_last_modified_datetime CHECK(
+		LastModifiedDatetime IS NOT NULL
+	),
+	CONSTRAINT CHK_product_backlog_entries_not_null_user_is_active CHECK(
+		IsActive IS NOT NULL
+	),
+	CONSTRAINT CHK_product_backlog_entries_not_null_user_stitle CHECK(
+		Title IS NOT NULL
+	),
+	CONSTRAINT CHK_product_backlog_entries_not_null_user_description CHECK(
+		Description IS NOT NULL
+	),
+
+	CONSTRAINT FK_product_backlog_entries_product_backlog_entry_status_id_product_backlog_entry_statuses_id
+		FOREIGN KEY(ProductBacklogEntryStatusId)
+		REFERENCES ProductBacklogEntryStatuses(Id),
+	CONSTRAINT FK_product_backlog_entries_user_story_id_user_stories_id
+		FOREIGN KEY(UserStoryId)
+		REFERENCES UserStories(Id),
+	CONSTRAINT FK_product_backlog_entries_created_by_user_id_users_id
+		FOREIGN KEY(CreatedByUserId)
+		REFERENCES Users(Id),
+	CONSTRAINT FK_product_backlog_entries_last_modified_by_user_id_users_id
+		FOREIGN KEY(LastModifiedByUserId)
+		REFERENCES Users(Id),
+	CONSTRAINT FK_product_backlog_entries_assigned_to_user_id_users_id
+		FOREIGN KEY(AssignedToUserId)
 		REFERENCES Users(Id)
 )
 ------------
